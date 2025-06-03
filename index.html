@@ -265,7 +265,7 @@
         }
 
         async function shuffleSelectedPresenters() {
-            if (GAS_WEB_APP_URL == 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
+            if (GAS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
                 showStatusMessage(statusMessageShuffle, 'Google Apps ScriptのウェブアプリURLがHTMLファイル内で設定されていません。', 'error');
                 return;
             }
