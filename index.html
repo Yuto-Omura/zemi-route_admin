@@ -7,7 +7,7 @@
     body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
     label, select { font-size: 1.1em; margin: 0.5em 0; display: block; }
     button { font-size: 1.2em; padding: 0.5em 1em; margin-top: 1em; }
-    #result { margin-top: 2em; font-weight: bold; }
+    #result { margin-top: 2em; font-weight: bold; white-space: pre-line; }
   </style>
 </head>
 <body>
@@ -25,15 +25,15 @@
   <div id="result"></div>
 
   <script>
-    const url = "https://script.google.com/macros/s/AKfycbw8XtItjH-h-jxsunD8xUdl1KjmJ4y82uum3spNXmFRWzjX9HKiDH0FKqkurFSoPg5YFg/exec"; // ★あなたのWebアプリURLに置き換えてください
+    const url = "https://script.google.com/macros/s/AKfycbxN5C94-X-Lym8eF1jm0wGO31dR7lbufJrljGQHfjXasfTDUBus3Sj25IbVCTrV2qt2VA/exec";
     const selects = document.querySelectorAll(".presenter");
     const resultDiv = document.getElementById("result");
 
-    // 名前を取得して各セレクトに追加
+    // 名前を取得
     fetch(url)
       .then(res => res.json())
       .then(data => {
-        const names = Object.keys(data); // data = {名前:順路} の形式想定
+        const names = Object.keys(data);
         selects.forEach(select => {
           names.forEach(name => {
             const option = document.createElement("option");
@@ -47,6 +47,7 @@
         resultDiv.textContent = "名前の取得に失敗しました: " + err;
       });
 
+    // 順路生成
     document.getElementById("form").addEventListener("submit", e => {
       e.preventDefault();
 
