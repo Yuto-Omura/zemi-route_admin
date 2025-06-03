@@ -90,7 +90,6 @@
         const shufflerSection = document.getElementById('shufflerSection');
         const shuffleButton = document.getElementById('shuffleButton');
         const statusMessageShuffle = document.getElementById('statusMessageShuffle');
-        // const shuffleResult = document.getElementById('shuffleResult'); // shuffleResult要素は削除されたため、この行は不要
         const loadingIndicator = document.getElementById('loadingIndicator');
         const gasUrlInfo = document.getElementById('gasUrlInfo');
 
@@ -98,11 +97,11 @@
             createDropdowns();
             updateUiState(); // 初期UI状態を設定
 
-            if (GAS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
+            // GAS_WEB_APP_URLが初期値のままか、空文字の場合にエラーメッセージを表示
+            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
                 gasUrlInfo.innerHTML = '<strong class="text-red-600">Google Apps ScriptのウェブアプリURLが設定されていません。HTMLファイル内の `GAS_WEB_APP_URL` を編集してください。</strong>';
                 gasUrlInfo.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
                 gasUrlInfo.classList.add('bg-red-100', 'text-red-700', 'border-red-300');
-                // URL未設定時は機能を無効化
                 presenterSelectionSection.classList.add('opacity-50', 'pointer-events-none');
                 shufflerSection.classList.add('opacity-50', 'pointer-events-none');
             }
@@ -113,8 +112,7 @@
         });
 
         function createDropdowns() {
-            dropdownContainer.innerHTML = ''; // Clear previous
-             // 既存の<p>タグを保持するために、その後にプルダウンを追加
+            dropdownContainer.innerHTML = ''; 
             const existingParagraph = dropdownContainer.querySelector('p');
             if (existingParagraph) {
                 dropdownContainer.innerHTML = existingParagraph.outerHTML;
@@ -130,14 +128,14 @@
                 const select = document.createElement('select');
                 select.id = selectId;
                 select.className = "mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500";
-                select.disabled = true; // 初期状態は無効
+                select.disabled = true; 
 
                 const defaultOption = document.createElement('option');
                 defaultOption.value = "";
                 defaultOption.textContent = "--- 名簿を読み込んでください ---";
                 select.appendChild(defaultOption);
                 
-                const div = document.createElement('div'); // ラベルとセレクトをグループ化
+                const div = document.createElement('div'); 
                 div.appendChild(label);
                 div.appendChild(select);
                 dropdownContainer.appendChild(div);
@@ -148,7 +146,7 @@
             for (let i = 0; i < NUM_DROPDOWNS; i++) {
                 const select = document.getElementById(`presenter-dropdown-${i}`);
                 if (select) {
-                    select.innerHTML = ''; // Clear existing options
+                    select.innerHTML = ''; 
                     const defaultOption = document.createElement('option');
                     defaultOption.value = "";
                     defaultOption.textContent = message;
@@ -159,7 +157,8 @@
         }
 
         function updateUiState() {
-            const urlIsValid = GAS_WEB_APP_URL && GAS_WEB_APP_URL !== '' && GAS_WEB_APP_URL !== 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec';
+            // GAS_WEB_APP_URLが有効な値（初期値でなく、空でもない）かチェック
+            const urlIsValid = GAS_WEB_APP_URL && GAS_WEB_APP_URL !== '' && GAS_WEB_APP_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
             
             if (!urlIsValid) {
                 presenterSelectionSection.classList.add('opacity-50', 'pointer-events-none');
@@ -180,7 +179,7 @@
 
         function showStatusMessage(element, message, type = 'info') {
             element.textContent = message;
-            element.className = 'mb-3 p-2 text-center rounded-md text-sm'; // Reset classes
+            element.className = 'mb-3 p-2 text-center rounded-md text-sm'; 
             switch (type) {
                 case 'error': element.classList.add('bg-red-100', 'text-red-700'); break;
                 case 'success': element.classList.add('bg-green-100', 'text-green-700'); break;
@@ -191,7 +190,8 @@
         }
 
         async function fetchAndPopulateDropdowns() {
-            if (GAS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
+            // GAS_WEB_APP_URLが初期値のままか、空文字の場合にエラー
+            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
                 showStatusMessage(statusMessageFetch, 'Google Apps ScriptのウェブアプリURLがHTMLファイル内で設定されていません。', 'error');
                 return;
             }
@@ -265,7 +265,8 @@
         }
 
         async function shuffleSelectedPresenters() {
-            if (GAS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
+            // GAS_WEB_APP_URLが初期値のままか、空文字の場合にエラー
+            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
                 showStatusMessage(statusMessageShuffle, 'Google Apps ScriptのウェブアプリURLがHTMLファイル内で設定されていません。', 'error');
                 return;
             }
@@ -275,13 +276,8 @@
                 showStatusMessage(statusMessageShuffle, '発表者が選択されていません。プルダウンから選択してください。', 'error');
                 return;
             }
-            //  if (selectedPresenters.length < 4) { // 任意: 最低人数チェック
-            //     showStatusMessage(statusMessageShuffle, '最低4人の発表者を選択してください。', 'error');
-            //     return; 
-            // }
 
             showStatusMessage(statusMessageShuffle, '順番をシャッフル中です...', 'loading');
-            // shuffleResult.textContent = ''; // shuffleResult要素は削除されたため不要
 
             try {
                 const payload = { presenters: selectedPresenters };
@@ -299,8 +295,6 @@
                     throw new Error(errorText);
                 }
                 
-                // const resultText = await response.text(); // 結果テキストは画面に表示しないので不要
-                // shuffleResult.textContent = resultText; // shuffleResult要素は削除されたため不要
                 showStatusMessage(statusMessageShuffle, '順番が決定しました！結果はスプレッドシート及び参加者用ページに反映されます。', 'success');
 
             } catch (error) {
