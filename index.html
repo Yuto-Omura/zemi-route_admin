@@ -1,35 +1,39 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <title>発表者選択と順路生成</title>
-    <style>
-      body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
-      label, select { font-size: 1.1em; margin: 0.5em 0; display: block; }
-      button { font-size: 1.2em; padding: 0.5em 1em; margin-top: 1em; }
-      #result { margin-top: 2em; font-weight: bold; }
-    </style>
-  </head>
-  <body>
-    <h1>発表者を選んで順路を生成</h1>
+<head>
+  <meta charset="UTF-8" />
+  <title>発表者選択と順路生成</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
+    label, select { font-size: 1.1em; margin: 0.5em 0; display: block; }
+    button { font-size: 1.2em; padding: 0.5em 1em; margin-top: 1em; }
+    #result { margin-top: 2em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>発表者を選んで順路を生成</h1>
 
-    <form id="form">
-      <label>発表者1：<select class="presenter"></select></label>
-      <label>発表者2：<select class="presenter"></select></label>
-      <label>発表者3：<select class="presenter"></select></label>
-      <label>発表者4：<select class="presenter"></select></label>
-      <label>発表者5：<select class="presenter"><option value="">（任意）</option></select></label>
-      <button type="submit">順路を生成</button>
-    </form>
+  <form id="form">
+    <label>発表者1：<select class="presenter"></select></label>
+    <label>発表者2：<select class="presenter"></select></label>
+    <label>発表者3：<select class="presenter"></select></label>
+    <label>発表者4：<select class="presenter"></select></label>
+    <label>発表者5：<select class="presenter"><option value="">（任意）</option></select></label>
+    <button type="submit">順路を生成</button>
+  </form>
 
-    <div id="result"></div>
+  <div id="result"></div>
 
-    <script>
-      const selects = document.querySelectorAll(".presenter");
-      const resultDiv = document.getElementById("result");
+  <script>
+    const url = "https://script.google.com/macros/s/AKfycbxxxxxxx/exec"; // ★あなたのWebアプリURLに置き換えてください
+    const selects = document.querySelectorAll(".presenter");
+    const resultDiv = document.getElementById("result");
 
-      // Google Apps Script から名前を取得
-      google.script.run.withSuccessHandler(names => {
+    // 名前を取得して各セレクトに追加
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const names = Object.keys(data); // data = {名前:順路} の形式想定
         selects.forEach(select => {
           names.forEach(name => {
             const option = document.createElement("option");
@@ -38,24 +42,35 @@
             select.appendChild(option);
           });
         });
-      }).getNames();
-
-      // フォーム送信
-      document.getElementById("form").addEventListener("submit", e => {
-        e.preventDefault();
-
-        const selected = [...selects].map(s => s.value).filter(v => v !== "");
-        const uniqueSelected = [...new Set(selected)];
-
-        if (uniqueSelected.length < 4) {
-          resultDiv.textContent = "最低4人の発表者を選んでください。";
-          return;
-        }
-
-        google.script.run
-          .withSuccessHandler(message => resultDiv.textContent = message)
-          .generateRoutes(uniqueSelected);
+      })
+      .catch(err => {
+        resultDiv.textContent = "名前の取得に失敗しました: " + err;
       });
-    </script>
-  </body>
+
+    document.getElementById("form").addEventListener("submit", e => {
+      e.preventDefault();
+
+      const selected = [...selects].map(s => s.value).filter(v => v !== "");
+      const uniqueSelected = [...new Set(selected)];
+
+      if (uniqueSelected.length < 4) {
+        resultDiv.textContent = "最低4人の発表者を選んでください。";
+        return;
+      }
+
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presenters: uniqueSelected })
+      })
+      .then(res => res.text())
+      .then(text => {
+        resultDiv.textContent = text;
+      })
+      .catch(err => {
+        resultDiv.textContent = "エラーが発生しました: " + err;
+      });
+    });
+  </script>
+</body>
 </html>
