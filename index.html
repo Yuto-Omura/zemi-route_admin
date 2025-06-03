@@ -76,7 +76,7 @@
         // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
         // Google Apps ScriptのウェブアプリURLをここに直接入力してください
         // 例: const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXX/exec';
-        const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; 
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec'; 
         // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         const NUM_DROPDOWNS = 5;
@@ -159,7 +159,7 @@
         }
 
         function updateUiState() {
-            const urlIsValid = GAS_WEB_APP_URL && GAS_WEB_APP_URL !== '' && GAS_WEB_APP_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+            const urlIsValid = GAS_WEB_APP_URL && GAS_WEB_APP_URL !== '' && GAS_WEB_APP_URL !== 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec';
             
             if (!urlIsValid) {
                 presenterSelectionSection.classList.add('opacity-50', 'pointer-events-none');
@@ -191,7 +191,7 @@
         }
 
         async function fetchAndPopulateDropdowns() {
-            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
+            if (GAS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
                 showStatusMessage(statusMessageFetch, 'Google Apps ScriptのウェブアプリURLがHTMLファイル内で設定されていません。', 'error');
                 return;
             }
@@ -265,7 +265,7 @@
         }
 
         async function shuffleSelectedPresenters() {
-            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
+            if (GAS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
                 showStatusMessage(statusMessageShuffle, 'Google Apps ScriptのウェブアプリURLがHTMLファイル内で設定されていません。', 'error');
                 return;
             }
