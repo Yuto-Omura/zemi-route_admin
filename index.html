@@ -1,77 +1,336 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>発表者選択と順路生成</title>
-  <style>
-    body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
-    label, select { font-size: 1.1em; margin: 0.5em 0; display: block; }
-    button { font-size: 1.2em; padding: 0.5em 1em; margin-top: 1em; }
-    #result { margin-top: 2em; font-weight: bold; white-space: pre-line; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゼミ順番決めアプリ（管理者用）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Interフォントを適用 */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        select:disabled {
+            background-color: #e9ecef; /* より明確な無効状態の背景色 */
+            opacity: 0.7;
+        }
+    </style>
 </head>
-<body>
-  <h1>発表者を選んで順路を生成</h1>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col items-center py-8 px-4">
+    <div class="container bg-white p-6 sm:p-8 rounded-xl shadow-xl w-full">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600">ゼミ順番決めアプリ（管理者用）</h1>
+        </header>
 
-  <form id="form">
-    <label>発表者1：<select class="presenter"></select></label>
-    <label>発表者2：<select class="presenter"></select></label>
-    <label>発表者3：<select class="presenter"></select></label>
-    <label>発表者4：<select class="presenter"></select></label>
-    <label>発表者5：<select class="presenter"><option value="">（任意）</option></select></label>
-    <button type="submit">順路を生成</button>
-  </form>
+        <div id="gasUrlWarning" class="mb-4 p-3 text-center rounded-md bg-yellow-100 text-yellow-700 border border-yellow-300 hidden">
+            Google Apps ScriptのウェブアプリURLが設定されていません。下の入力欄にURLを設定してください。
+        </div>
 
-  <div id="result"></div>
+        <div class="mb-6">
+            <label for="gasUrlInput" class="block text-sm font-medium text-gray-700 mb-1">Google Apps Script ウェブアプリURL:</label>
+            <input type="text" id="gasUrlInput" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="ここにウェブアプリのURLを貼り付け">
+            <button id="saveGasUrlButton" class="mt-2 w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out">
+                URLを保存して使用
+            </button>
+        </div>
+        
+        <hr class="my-6">
 
-  <script>
-    const url = "https://script.google.com/macros/s/AKfycbytjEEFOlJC2B67H6orZb_oaFkYesz0j3uo4bAlyRB_disfVb-bw7O-IpmNouXXaXW0/exec";
-    const selects = document.querySelectorAll(".presenter");
-    const resultDiv = document.getElementById("result");
+        <main>
+            <section id="presenterSelectionSection" class="opacity-50 pointer-events-none">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-3">1. 発表者選択</h2>
+                <button id="loadNamesToDropdownsButton" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out mb-4">
+                    名簿をプルダウンに読み込む
+                </button>
+                <div id="statusMessageFetch" class="mb-3 p-2 text-center rounded-md text-sm"></div>
+                
+                <div id="dropdownContainer" class="space-y-4 mb-6">
+                    <p class="text-sm text-gray-500">名簿読み込み後、最大5名の発表者を選択してください。</p>
+                </div>
+            </section>
 
-    // 名前を取得
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        const names = Object.keys(data);
-        selects.forEach(select => {
-          names.forEach(name => {
-            const option = document.createElement("option");
-            option.value = name;
-            option.textContent = name;
-            select.appendChild(option);
-          });
+            <section id="shufflerSection" class="opacity-50 pointer-events-none">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-3">2. 順番決め実行</h2>
+                <button id="shuffleButton" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out mb-4">
+                    選択した発表者で順番を決める
+                </button>
+                <div id="statusMessageShuffle" class="mb-3 p-2 text-center rounded-md text-sm"></div>
+                <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">決定した順番:</h3>
+                <div id="shuffleResult" class="p-3 bg-gray-50 rounded-md border whitespace-pre-wrap min-h-[100px]">
+                    </div>
+            </section>
+        </main>
+        <div id="loadingIndicator" class="loader hidden my-4"></div>
+
+        <footer class="mt-10 text-center text-sm text-gray-500">
+            <p>&copy; 2024 ゼミ順番決めアプリ</p>
+        </footer>
+    </div>
+
+    <script>
+        let GAS_WEB_APP_URL = '';
+        const NUM_DROPDOWNS = 5;
+        let allNamesFromSheet = []; // 読み込んだ名簿を保持
+
+        const gasUrlInput = document.getElementById('gasUrlInput');
+        const saveGasUrlButton = document.getElementById('saveGasUrlButton');
+        const gasUrlWarning = document.getElementById('gasUrlWarning');
+        
+        const presenterSelectionSection = document.getElementById('presenterSelectionSection');
+        const loadNamesToDropdownsButton = document.getElementById('loadNamesToDropdownsButton');
+        const statusMessageFetch = document.getElementById('statusMessageFetch');
+        const dropdownContainer = document.getElementById('dropdownContainer');
+
+        const shufflerSection = document.getElementById('shufflerSection');
+        const shuffleButton = document.getElementById('shuffleButton');
+        const statusMessageShuffle = document.getElementById('statusMessageShuffle');
+        const shuffleResult = document.getElementById('shuffleResult');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createDropdowns();
+            loadGasUrl();
+            updateUiState();
+
+            saveGasUrlButton.addEventListener('click', () => {
+                GAS_WEB_APP_URL = gasUrlInput.value.trim();
+                if (GAS_WEB_APP_URL) {
+                    localStorage.setItem('adminGasWebAppUrl', GAS_WEB_APP_URL);
+                    showStatusMessage(statusMessageFetch, 'URLが保存されました。名簿を読み込んでください。', 'success');
+                    gasUrlWarning.classList.add('hidden');
+                } else {
+                    localStorage.removeItem('adminGasWebAppUrl');
+                    showStatusMessage(statusMessageFetch, 'URLを空にしました。', 'info');
+                }
+                updateUiState();
+                // URLが変更されたら、プルダウンもリセット（または再読み込みを促す）
+                resetAllDropdowns(); 
+                allNamesFromSheet = [];
+            });
+
+            loadNamesToDropdownsButton.addEventListener('click', fetchAndPopulateDropdowns);
+            shuffleButton.addEventListener('click', shuffleSelectedPresenters);
         });
-      })
-      .catch(err => {
-        resultDiv.textContent = "名前の取得に失敗しました: " + err;
-      });
 
-    // 順路生成
-    document.getElementById("form").addEventListener("submit", e => {
-      e.preventDefault();
+        function createDropdowns() {
+            dropdownContainer.innerHTML = ''; // Clear previous
+            for (let i = 0; i < NUM_DROPDOWNS; i++) {
+                const selectId = `presenter-dropdown-${i}`;
+                const label = document.createElement('label');
+                label.htmlFor = selectId;
+                label.textContent = `発表者 ${i + 1}:`;
+                label.className = "block text-sm font-medium text-gray-700";
 
-      const selected = [...selects].map(s => s.value).filter(v => v !== "");
-      const uniqueSelected = [...new Set(selected)];
+                const select = document.createElement('select');
+                select.id = selectId;
+                select.className = "mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500";
+                select.disabled = true; // 初期状態は無効
 
-      if (uniqueSelected.length < 4) {
-        resultDiv.textContent = "最低4人の発表者を選んでください。";
-        return;
-      }
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "";
+                defaultOption.textContent = "--- 名簿を読み込んでください ---";
+                select.appendChild(defaultOption);
+                
+                dropdownContainer.appendChild(label);
+                dropdownContainer.appendChild(select);
+            }
+        }
+        
+        function resetAllDropdowns(message = "--- 名簿を読み込んでください ---") {
+            for (let i = 0; i < NUM_DROPDOWNS; i++) {
+                const select = document.getElementById(`presenter-dropdown-${i}`);
+                if (select) {
+                    select.innerHTML = ''; // Clear existing options
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = "";
+                    defaultOption.textContent = message;
+                    select.appendChild(defaultOption);
+                    select.disabled = true;
+                }
+            }
+        }
 
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ presenters: uniqueSelected })
-      })
-      .then(res => res.text())
-      .then(text => {
-        resultDiv.textContent = text;
-      })
-      .catch(err => {
-        resultDiv.textContent = "エラーが発生しました: " + err;
-      });
-    });
-  </script>
+
+        function loadGasUrl() {
+            const storedUrl = localStorage.getItem('adminGasWebAppUrl');
+            if (storedUrl) {
+                GAS_WEB_APP_URL = storedUrl;
+                gasUrlInput.value = storedUrl;
+            }
+        }
+
+        function updateUiState() {
+            const urlIsValid = GAS_WEB_APP_URL && GAS_WEB_APP_URL !== '';
+            if (urlIsValid) {
+                presenterSelectionSection.classList.remove('opacity-50', 'pointer-events-none');
+                shufflerSection.classList.remove('opacity-50', 'pointer-events-none'); // シャッフルセクションも一旦有効化（名簿読み込み後に操作可能）
+                gasUrlWarning.classList.add('hidden');
+            } else {
+                presenterSelectionSection.classList.add('opacity-50', 'pointer-events-none');
+                shufflerSection.classList.add('opacity-50', 'pointer-events-none');
+                gasUrlWarning.classList.remove('hidden');
+            }
+            // プルダウンの有効/無効状態は名簿読み込み状況にも依存させる
+            const namesLoaded = allNamesFromSheet.length > 0;
+            for (let i = 0; i < NUM_DROPDOWNS; i++) {
+                const select = document.getElementById(`presenter-dropdown-${i}`);
+                if (select) {
+                    select.disabled = !urlIsValid || !namesLoaded;
+                }
+            }
+        }
+
+        function showStatusMessage(element, message, type = 'info') {
+            element.textContent = message;
+            element.className = 'mb-3 p-2 text-center rounded-md text-sm'; // Reset classes
+            switch (type) {
+                case 'error': element.classList.add('bg-red-100', 'text-red-700'); break;
+                case 'success': element.classList.add('bg-green-100', 'text-green-700'); break;
+                case 'info': element.classList.add('bg-blue-100', 'text-blue-700'); break;
+                case 'loading': element.classList.add('bg-yellow-100', 'text-yellow-700'); loadingIndicator.classList.remove('hidden'); break;
+            }
+            if (type !== 'loading') loadingIndicator.classList.add('hidden');
+        }
+
+        async function fetchAndPopulateDropdowns() {
+            if (!GAS_WEB_APP_URL) {
+                showStatusMessage(statusMessageFetch, 'Google Apps ScriptのウェブアプリURLが設定されていません。', 'error');
+                return;
+            }
+
+            showStatusMessage(statusMessageFetch, '名簿を読み込み中です...', 'loading');
+            resetAllDropdowns("--- 読み込み中 ---");
+
+            try {
+                // action=getNames パラメータを付けて名簿を取得
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getNames`, { method: 'GET', mode: 'cors' });
+                if (!response.ok) {
+                    let errorText = `名簿の取得に失敗しました。サーバー応答: ${response.status} ${response.statusText}`;
+                    try { const errorData = await response.json(); if (errorData && errorData.error) errorText += ` - ${errorData.error}`; } catch(e) {}
+                    throw new Error(errorText);
+                }
+
+                const data = await response.json();
+
+                if (data.error) throw new Error(`名簿取得エラー (Apps Script): ${data.error}`);
+                
+                if (Array.isArray(data)) {
+                    allNamesFromSheet = data; // 取得した名前をグローバル変数に保存
+                    if (data.length === 0) {
+                        showStatusMessage(statusMessageFetch, '名簿に名前が登録されていません。', 'info');
+                        resetAllDropdowns("--- 名簿に名前がありません ---");
+                    } else {
+                        populateAllDropdowns(data);
+                        showStatusMessage(statusMessageFetch, `名簿を読み込みました (${data.length}名)。発表者を選択してください。`, 'success');
+                    }
+                } else {
+                    throw new Error('取得したデータ形式が正しくありません (配列ではありません)。');
+                }
+            } catch (error) {
+                console.error('名簿取得エラー:', error);
+                showStatusMessage(statusMessageFetch, `エラー: ${error.message}`, 'error');
+                resetAllDropdowns("--- 読み込みエラー ---");
+                allNamesFromSheet = []; // エラー時はリセット
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                updateUiState(); // UIの状態を更新してプルダウンのdisabled状態を制御
+            }
+        }
+
+        function populateAllDropdowns(names) {
+            for (let i = 0; i < NUM_DROPDOWNS; i++) {
+                const select = document.getElementById(`presenter-dropdown-${i}`);
+                select.innerHTML = ''; // Clear previous options
+
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "";
+                defaultOption.textContent = `--- 発表者 ${i + 1} を選択 ---`;
+                select.appendChild(defaultOption);
+
+                names.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    select.appendChild(option);
+                });
+                select.disabled = false; // 名簿読み込み後は有効化
+            }
+        }
+
+        function getSelectedPresentersFromDropdowns() {
+            const selectedPresenters = [];
+            for (let i = 0; i < NUM_DROPDOWNS; i++) {
+                const select = document.getElementById(`presenter-dropdown-${i}`);
+                if (select.value) { // 空でない値のみ追加
+                    selectedPresenters.push(select.value);
+                }
+            }
+            return selectedPresenters;
+        }
+
+        async function shuffleSelectedPresenters() {
+            if (!GAS_WEB_APP_URL) {
+                showStatusMessage(statusMessageShuffle, 'Google Apps ScriptのウェブアプリURLが設定されていません。', 'error');
+                return;
+            }
+
+            const selectedPresenters = getSelectedPresentersFromDropdowns();
+            if (selectedPresenters.length === 0) {
+                showStatusMessage(statusMessageShuffle, '発表者が選択されていません。プルダウンから選択してください。', 'error');
+                return;
+            }
+             if (selectedPresenters.length < 4) { // 任意: 最低人数チェック
+                showStatusMessage(statusMessageShuffle, '最低4人の発表者を選択してください。', 'error');
+                // return; // 厳密にするならコメントアウトを外す
+            }
+
+
+            showStatusMessage(statusMessageShuffle, '順番をシャッフル中です...', 'loading');
+            shuffleResult.textContent = '';
+
+            try {
+                const payload = { presenters: selectedPresenters };
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' }, // Apps Script側はtext/plainで受ける設定でもJSONで送る
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
+                });
+
+                if (!response.ok) {
+                    let errorText = `シャッフルリクエスト失敗。サーバー応答: ${response.status} ${response.statusText}`;
+                    try { const errorDataText = await response.text(); if (errorDataText) errorText += ` - ${errorDataText}`; } catch(e) {}
+                    throw new Error(errorText);
+                }
+                
+                const resultText = await response.text();
+                shuffleResult.textContent = resultText;
+                showStatusMessage(statusMessageShuffle, '順番が決定しました！結果は参加者用ページにも反映されます。', 'success');
+
+            } catch (error) {
+                console.error('シャッフルエラー:', error);
+                showStatusMessage(statusMessageShuffle, `エラー: ${error.message}`, 'error');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+    </script>
 </body>
 </html>
