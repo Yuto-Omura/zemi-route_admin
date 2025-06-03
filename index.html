@@ -38,22 +38,14 @@
             <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600">ゼミ順番決めアプリ（管理者用）</h1>
         </header>
 
-        <div id="gasUrlWarning" class="mb-4 p-3 text-center rounded-md bg-yellow-100 text-yellow-700 border border-yellow-300 hidden">
-            Google Apps ScriptのウェブアプリURLが設定されていません。下の入力欄にURLを設定してください。
-        </div>
-
-        <div class="mb-6">
-            <label for="gasUrlInput" class="block text-sm font-medium text-gray-700 mb-1">Google Apps Script ウェブアプリURL:</label>
-            <input type="text" id="gasUrlInput" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="ここにウェブアプリのURLを貼り付け">
-            <button id="saveGasUrlButton" class="mt-2 w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out">
-                URLを保存して使用
-            </button>
+        <div id="gasUrlInfo" class="mb-4 p-3 text-center rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+            Google Apps ScriptのウェブアプリURLはHTMLファイル内に直接設定されています。変更する場合はHTMLファイルを編集してください。
         </div>
         
         <hr class="my-6">
 
         <main>
-            <section id="presenterSelectionSection" class="opacity-50 pointer-events-none">
+            <section id="presenterSelectionSection">
                 <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-3">1. 発表者選択</h2>
                 <button id="loadNamesToDropdownsButton" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out mb-4">
                     名簿をプルダウンに読み込む
@@ -65,16 +57,13 @@
                 </div>
             </section>
 
-            <section id="shufflerSection" class="opacity-50 pointer-events-none">
+            <section id="shufflerSection">
                 <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-3">2. 順番決め実行</h2>
                 <button id="shuffleButton" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out mb-4">
                     選択した発表者で順番を決める
                 </button>
                 <div id="statusMessageShuffle" class="mb-3 p-2 text-center rounded-md text-sm"></div>
-                <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">決定した順番:</h3>
-                <div id="shuffleResult" class="p-3 bg-gray-50 rounded-md border whitespace-pre-wrap min-h-[100px]">
-                    </div>
-            </section>
+                </section>
         </main>
         <div id="loadingIndicator" class="loader hidden my-4"></div>
 
@@ -84,13 +73,14 @@
     </div>
 
     <script>
-        let GAS_WEB_APP_URL = '';
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        // Google Apps ScriptのウェブアプリURLをここに直接入力してください
+        // 例: const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXXX/exec';
+        const GAS_WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE'; 
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
         const NUM_DROPDOWNS = 5;
         let allNamesFromSheet = []; // 読み込んだ名簿を保持
-
-        const gasUrlInput = document.getElementById('gasUrlInput');
-        const saveGasUrlButton = document.getElementById('saveGasUrlButton');
-        const gasUrlWarning = document.getElementById('gasUrlWarning');
         
         const presenterSelectionSection = document.getElementById('presenterSelectionSection');
         const loadNamesToDropdownsButton = document.getElementById('loadNamesToDropdownsButton');
@@ -100,29 +90,23 @@
         const shufflerSection = document.getElementById('shufflerSection');
         const shuffleButton = document.getElementById('shuffleButton');
         const statusMessageShuffle = document.getElementById('statusMessageShuffle');
-        const shuffleResult = document.getElementById('shuffleResult');
+        // const shuffleResult = document.getElementById('shuffleResult'); // shuffleResult要素は削除されたため、この行は不要
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const gasUrlInfo = document.getElementById('gasUrlInfo');
 
         document.addEventListener('DOMContentLoaded', () => {
             createDropdowns();
-            loadGasUrl();
-            updateUiState();
+            updateUiState(); // 初期UI状態を設定
 
-            saveGasUrlButton.addEventListener('click', () => {
-                GAS_WEB_APP_URL = gasUrlInput.value.trim();
-                if (GAS_WEB_APP_URL) {
-                    localStorage.setItem('adminGasWebAppUrl', GAS_WEB_APP_URL);
-                    showStatusMessage(statusMessageFetch, 'URLが保存されました。名簿を読み込んでください。', 'success');
-                    gasUrlWarning.classList.add('hidden');
-                } else {
-                    localStorage.removeItem('adminGasWebAppUrl');
-                    showStatusMessage(statusMessageFetch, 'URLを空にしました。', 'info');
-                }
-                updateUiState();
-                // URLが変更されたら、プルダウンもリセット（または再読み込みを促す）
-                resetAllDropdowns(); 
-                allNamesFromSheet = [];
-            });
+            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
+                gasUrlInfo.innerHTML = '<strong class="text-red-600">Google Apps ScriptのウェブアプリURLが設定されていません。HTMLファイル内の `GAS_WEB_APP_URL` を編集してください。</strong>';
+                gasUrlInfo.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                gasUrlInfo.classList.add('bg-red-100', 'text-red-700', 'border-red-300');
+                // URL未設定時は機能を無効化
+                presenterSelectionSection.classList.add('opacity-50', 'pointer-events-none');
+                shufflerSection.classList.add('opacity-50', 'pointer-events-none');
+            }
+
 
             loadNamesToDropdownsButton.addEventListener('click', fetchAndPopulateDropdowns);
             shuffleButton.addEventListener('click', shuffleSelectedPresenters);
@@ -130,6 +114,12 @@
 
         function createDropdowns() {
             dropdownContainer.innerHTML = ''; // Clear previous
+             // 既存の<p>タグを保持するために、その後にプルダウンを追加
+            const existingParagraph = dropdownContainer.querySelector('p');
+            if (existingParagraph) {
+                dropdownContainer.innerHTML = existingParagraph.outerHTML;
+            }
+
             for (let i = 0; i < NUM_DROPDOWNS; i++) {
                 const selectId = `presenter-dropdown-${i}`;
                 const label = document.createElement('label');
@@ -147,8 +137,10 @@
                 defaultOption.textContent = "--- 名簿を読み込んでください ---";
                 select.appendChild(defaultOption);
                 
-                dropdownContainer.appendChild(label);
-                dropdownContainer.appendChild(select);
+                const div = document.createElement('div'); // ラベルとセレクトをグループ化
+                div.appendChild(label);
+                div.appendChild(select);
+                dropdownContainer.appendChild(div);
             }
         }
         
@@ -166,27 +158,17 @@
             }
         }
 
-
-        function loadGasUrl() {
-            const storedUrl = localStorage.getItem('adminGasWebAppUrl');
-            if (storedUrl) {
-                GAS_WEB_APP_URL = storedUrl;
-                gasUrlInput.value = storedUrl;
-            }
-        }
-
         function updateUiState() {
-            const urlIsValid = GAS_WEB_APP_URL && GAS_WEB_APP_URL !== '';
-            if (urlIsValid) {
-                presenterSelectionSection.classList.remove('opacity-50', 'pointer-events-none');
-                shufflerSection.classList.remove('opacity-50', 'pointer-events-none'); // シャッフルセクションも一旦有効化（名簿読み込み後に操作可能）
-                gasUrlWarning.classList.add('hidden');
-            } else {
+            const urlIsValid = GAS_WEB_APP_URL && GAS_WEB_APP_URL !== '' && GAS_WEB_APP_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+            
+            if (!urlIsValid) {
                 presenterSelectionSection.classList.add('opacity-50', 'pointer-events-none');
                 shufflerSection.classList.add('opacity-50', 'pointer-events-none');
-                gasUrlWarning.classList.remove('hidden');
+            } else {
+                presenterSelectionSection.classList.remove('opacity-50', 'pointer-events-none');
+                shufflerSection.classList.remove('opacity-50', 'pointer-events-none');
             }
-            // プルダウンの有効/無効状態は名簿読み込み状況にも依存させる
+
             const namesLoaded = allNamesFromSheet.length > 0;
             for (let i = 0; i < NUM_DROPDOWNS; i++) {
                 const select = document.getElementById(`presenter-dropdown-${i}`);
@@ -209,8 +191,8 @@
         }
 
         async function fetchAndPopulateDropdowns() {
-            if (!GAS_WEB_APP_URL) {
-                showStatusMessage(statusMessageFetch, 'Google Apps ScriptのウェブアプリURLが設定されていません。', 'error');
+            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
+                showStatusMessage(statusMessageFetch, 'Google Apps ScriptのウェブアプリURLがHTMLファイル内で設定されていません。', 'error');
                 return;
             }
 
@@ -218,7 +200,6 @@
             resetAllDropdowns("--- 読み込み中 ---");
 
             try {
-                // action=getNames パラメータを付けて名簿を取得
                 const response = await fetch(`${GAS_WEB_APP_URL}?action=getNames`, { method: 'GET', mode: 'cors' });
                 if (!response.ok) {
                     let errorText = `名簿の取得に失敗しました。サーバー応答: ${response.status} ${response.statusText}`;
@@ -227,11 +208,10 @@
                 }
 
                 const data = await response.json();
-
                 if (data.error) throw new Error(`名簿取得エラー (Apps Script): ${data.error}`);
                 
                 if (Array.isArray(data)) {
-                    allNamesFromSheet = data; // 取得した名前をグローバル変数に保存
+                    allNamesFromSheet = data;
                     if (data.length === 0) {
                         showStatusMessage(statusMessageFetch, '名簿に名前が登録されていません。', 'info');
                         resetAllDropdowns("--- 名簿に名前がありません ---");
@@ -246,17 +226,17 @@
                 console.error('名簿取得エラー:', error);
                 showStatusMessage(statusMessageFetch, `エラー: ${error.message}`, 'error');
                 resetAllDropdowns("--- 読み込みエラー ---");
-                allNamesFromSheet = []; // エラー時はリセット
+                allNamesFromSheet = [];
             } finally {
                 loadingIndicator.classList.add('hidden');
-                updateUiState(); // UIの状態を更新してプルダウンのdisabled状態を制御
+                updateUiState();
             }
         }
 
         function populateAllDropdowns(names) {
             for (let i = 0; i < NUM_DROPDOWNS; i++) {
                 const select = document.getElementById(`presenter-dropdown-${i}`);
-                select.innerHTML = ''; // Clear previous options
+                select.innerHTML = ''; 
 
                 const defaultOption = document.createElement('option');
                 defaultOption.value = "";
@@ -269,7 +249,7 @@
                     option.textContent = name;
                     select.appendChild(option);
                 });
-                select.disabled = false; // 名簿読み込み後は有効化
+                select.disabled = false;
             }
         }
 
@@ -277,7 +257,7 @@
             const selectedPresenters = [];
             for (let i = 0; i < NUM_DROPDOWNS; i++) {
                 const select = document.getElementById(`presenter-dropdown-${i}`);
-                if (select.value) { // 空でない値のみ追加
+                if (select.value) {
                     selectedPresenters.push(select.value);
                 }
             }
@@ -285,8 +265,8 @@
         }
 
         async function shuffleSelectedPresenters() {
-            if (!GAS_WEB_APP_URL) {
-                showStatusMessage(statusMessageShuffle, 'Google Apps ScriptのウェブアプリURLが設定されていません。', 'error');
+            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
+                showStatusMessage(statusMessageShuffle, 'Google Apps ScriptのウェブアプリURLがHTMLファイル内で設定されていません。', 'error');
                 return;
             }
 
@@ -295,21 +275,20 @@
                 showStatusMessage(statusMessageShuffle, '発表者が選択されていません。プルダウンから選択してください。', 'error');
                 return;
             }
-             if (selectedPresenters.length < 4) { // 任意: 最低人数チェック
-                showStatusMessage(statusMessageShuffle, '最低4人の発表者を選択してください。', 'error');
-                // return; // 厳密にするならコメントアウトを外す
-            }
-
+            //  if (selectedPresenters.length < 4) { // 任意: 最低人数チェック
+            //     showStatusMessage(statusMessageShuffle, '最低4人の発表者を選択してください。', 'error');
+            //     return; 
+            // }
 
             showStatusMessage(statusMessageShuffle, '順番をシャッフル中です...', 'loading');
-            shuffleResult.textContent = '';
+            // shuffleResult.textContent = ''; // shuffleResult要素は削除されたため不要
 
             try {
                 const payload = { presenters: selectedPresenters };
                 const response = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
                     mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' }, // Apps Script側はtext/plainで受ける設定でもJSONで送る
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                     redirect: 'follow'
                 });
@@ -320,9 +299,9 @@
                     throw new Error(errorText);
                 }
                 
-                const resultText = await response.text();
-                shuffleResult.textContent = resultText;
-                showStatusMessage(statusMessageShuffle, '順番が決定しました！結果は参加者用ページにも反映されます。', 'success');
+                // const resultText = await response.text(); // 結果テキストは画面に表示しないので不要
+                // shuffleResult.textContent = resultText; // shuffleResult要素は削除されたため不要
+                showStatusMessage(statusMessageShuffle, '順番が決定しました！結果はスプレッドシート及び参加者用ページに反映されます。', 'success');
 
             } catch (error) {
                 console.error('シャッフルエラー:', error);
