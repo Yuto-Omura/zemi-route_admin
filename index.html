@@ -98,7 +98,7 @@
             createDropdowns();
             updateUiState(); // 初期UI状態を設定
 
-            if (GAS_WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE' || GAS_WEB_APP_URL === '') {
+            if (GAS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycby__L_otyEmaS9fq6FC8i0bXJqQX8wZI9_5ZBwnRvzI7vtJYNVCiU0Z0zoKUdZBtuB0Pw/exec' || GAS_WEB_APP_URL === '') {
                 gasUrlInfo.innerHTML = '<strong class="text-red-600">Google Apps ScriptのウェブアプリURLが設定されていません。HTMLファイル内の `GAS_WEB_APP_URL` を編集してください。</strong>';
                 gasUrlInfo.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
                 gasUrlInfo.classList.add('bg-red-100', 'text-red-700', 'border-red-300');
